@@ -1,6 +1,7 @@
 Lets start with the classic:
 
 Here is what I learned about System Design Interview: Consistent Hashing.
+
 Wanting to work as a developer at a Start Up has made me realized how important scaling is. Therefore, I decided to start learning about System Design.
 However, reading about it is never enough, when you truly start implementing it, you will learn a lot more and realized the gaps between you and the distributed system.
 Such as which algorithm to choose and why.
@@ -130,11 +131,14 @@ class ConsistentHasRing {
   }
 
   addServers() {
-    
+    this.servers[serverId] = {};
+    this.addVirtualNodes(serverId);
+    this.hashRing.sort((a, b) => a.pos - b.pos)
   }
 
   removeServer() {
-
+    delete this.hashRing[serverId];
+    this.hashRing = this.hashRing.filter( n => n.serverId !== serverId);
   }
 
   addKeyValue() {
@@ -146,7 +150,7 @@ class ConsistentHasRing {
   // ------------------------
 
   binarySearch(key){
-
+    
   }
 }
 ```
