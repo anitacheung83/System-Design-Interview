@@ -1,34 +1,37 @@
-Lets start with the classic:
+Lets start with the classic.
 
-Here is what I learned about System Design Interview: Consistent Hashing.
+Here is what I learned about **System Design Interview: Consistent Hashing**.
 
-Wanting to work as a developer at a Start Up has made me realized how important scaling is. Therefore, I decided to start learning about System Design.
-However, reading about it is never enough, when you truly start implementing it, you will learn a lot more and realized the gaps between you and the distributed system.
-Such as which algorithm to choose and why.
+Working in a start up community: One Eleven has allowed me to talk to startup founders. Spending time with startup founders has shown me how critical scalability really is.
+That push me to pick up the _System Design Interview_ book.
+
+However, reading alone is never enough. Once you actually start implement these concepts, you start to see the gaps between yourself and the distributed system. Such as which algorithms to choose and why.
 
 # Consistent Hashing
-In the world where there are more and more data, having 1 server is not enough to support it. Therefore, it is crucial to have more than 1, maybe even a thousands of servers to store key-value pairs. 
-Therefore you need to distribute the data.
+As data grows, a single server is never enough. To handle scale, we often need dozens or even hundreds of servers to store key-value pairs.
+That means we need away to distribute data across multiple servers efficiently.
 
-How do you do so?
-The answer is Hashing!
+So how do we do that? 
 
-Assuming you have 4 servers:
-With the traditional hashing that was taught in school:
-You will hash the key % 4 = to see which server it belongs.
+The answer is **Hashing**!
 
-Now, what happend with a server goes down.
+Assuming you have 4 servers, traditional hashing (what we learned in school) looks like this:
+You compute `key % numberOfServers` to decide which server stores the data.
 
-For example,
-Before
-14 % 4
-19 % 4
-61 % 4
+But what happens when a server gose down?
 
-After
-14 % 3
-19 % 3
-61 % 3
+| With 4 Servers | With 3 Servers |
+| :-------: | :------: |
+|  16 % 4 = 0  | 14 % 3 = 1 | 
+|  19 % 4 = 3 | 19 % 3 = 1  | 
+|  91 % 4 = 3  | 91 % 3 = 1 |
+
+Notice how many keys now map to different servers when just one server is removed.
+This means massive data reallocation, which is expensive and slow.
+
+To reduce unneccessary reallocation, we need a better approach.
+
+Enter **Consistent Hashing**!
 
 However, adding a servers to increase capacity and removing a server due to system failure is unavoidable in the real world.
 
@@ -42,6 +45,10 @@ Explain why use a hash Ring, because of consistency and adding a server and remo
 
 Now what happend with all the servers if the servers is crowded together, then the problem where most of the key value store happened in a server might
 Virtual Ring, why is it needed?
+
+A virtual ring is putting servers into different parts of the ring, which will ended up in the same server.
+
+There is only so much I can explain in a few sentences, therefore for further please return to System Design Interview: Chapter 5: Consistent Hashing.
 
 Which hash Algorithm to use?
 
@@ -141,19 +148,55 @@ class ConsistentHasRing {
     this.hashRing = this.hashRing.filter( n => n.serverId !== serverId);
   }
 
-  addKeyValue() {
+  addKeyValue(key, value) {
+    const pos = key % 1024
+    const idx = this.binarySearch(pos)
+    const serverId = this.hashRing[idx].serverId;
 
+    this.servers[serverId][key] = value;
   }
 
   // ------------------------
   // Helper Functions
   // ------------------------
+  
+  addVirtualNodes(serverId){
+    for (i = 0; i < this.vnodeCount ; i ++){
+      const pos = this.hash(`server-${serverId}-vnode-${i}`) % 1024;
+      this.insertIntoRing(pos, serverId);
+    }
+  }
+
+  insertIntoRing(pos, serverId){
+    const idx = this.binarySearch(pos)
+    this.hashRing.splice(idx, 0, {pos, serverId})
+  }
 
   binarySearch(key){
-    
+    let left = 0;
+    let right = this.hashRing.length
+
+    while (left <= right) {
+      const mid = (left + right) >> 1;
+      const midVal = this.hashRing[mid].pos;
+
+      if (midVal < val) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+  }
+
+  hash(str) {
+    let h = 0;
+    for (let c of str) h = (h * 31 + c.charCodeAt(0)) % 1024;
+    return h
   }
 }
 ```
+
+So what does Consistent hashing taught me about life? Being **consistent** is a **key** **value** in life.
 
 BUG: what happened when the last server has hash 1023 and the key value is 1024, did we take care about the edge case?
 PS. there is a lot of missing part at this chapter, it is not intended to be a perfectly working Router. Feel free to make it a fuller working things.
