@@ -54,12 +54,12 @@ There's much more depth behind these concepts, so if you're interested, please c
 
 
 ## Description
-* Initialization:
-* number of servers
-* number of virtual node
+### Initialization/Core Setup
+* number of servers: The number of server in the system.
+* number of virtual node: The number of virtual node for each server
 * Hash Ring Size = 2 ** 10 = 1024
   
-Feature to support:
+Features to support:
 * Adding Key Value Pairs
 * Adding Server
 * Removing Server
@@ -68,28 +68,34 @@ Feature to support:
 ### Data Structure
 
 ### Hash Ring structure:
-My initial thoughts on the hashRing structure was to build an array with a size of 1024. However, it will be really slow because not all the idx with store something. 
-Therefore, storing a hashRing with an Array of Key Value of Position and Server number. {pos: number, serverId: number}. Where the hashRing will store the virtual servers.
-Then, we will have a map of servers storing the server number and the associated key and value store. {serversId: {key: value}}.
+At first, I thought about creating an array of size 1024(hashRing size) and storing servers directly at each index.
+But most positions on the ring would be empty, which makes it inefficient.
 
-### Servers Structure
+Instead, I store the hashRing as an array of `{pos: number, serverId: number}`. 
+Each entry represents a virtual node placed on the ring.
 
+Seperately, I maintain a server map that stores all key-value pairs: `{serverId: {key: value}}`.
 
 ### Algorithm:
-Now that the Hash Ring Structure is determined, its time to pick the most time effiecient algorithm.
-The algorithm that I have in mind was Heap and Binary Search.
-Heap was elimated because heap is better for sorting, while our goal is to insert the key value pair into a particular spot rather then finding the minimum value and the maximum value.
+We need an efficient algorithm for inserting and locating nodes on the ring.
+I initially considered using a heap to maintain a sorted arr of the hashRing.
+Note that heaps are optimized for retreiving min/max, but **not** inserting elements at sorted positions.
 
-Binary Search:
-* binary search algorithm is a perfect algorithm, there is a lot of insert function and library that uses binary search: such as the famous bisect library.
-* Where the runtime is going to be O(log(n))
-* It is important to maintain the hash Ring sorted
+Thus, the algorithm I ended up choosing is: Binary Search
+* It provides `O(log n)` loockup/insert time.
+* Thus, it is important to maintain the hashRing sorted.
 
 Hash Algorithm:
 * Name an algorithm that does not work and explain why
 * name an algorithm that works and explain why
 
-### Edge Cases
+### Edge Cases to Consider
+* What happens when the hash of a key is larger than every virtual node's position?
+  * Wrap around to the first node in the ring. Update Binary Search.
+* What if all virtual nodes cluster together?
+  * Virtaul nodes help distribute them evenly.
+* What if a server is removed shilw holding data?
+  * Rehash each key and reinsert based on the ring. 
 
 ### Functions
 contructor()
@@ -99,30 +105,29 @@ contructor()
   - this.servers = {}
   - this.numberOfServer = numServers;
   - this.vnodeCount = vnodeCount
-- function: initialize add servers
+- Calls `addServers()` for each server count.
 
 addServers()
-- should add virtaul server using a hash Algorthm (insert link)
-- sort the hashRing so you can apply binary Search
+* Adds the server to this.servers
+* Adds its virtual nodes to the ring
+* Sorts the ring for binary search
 
 removeServer()
-- get the list of key value pairs
-- delete this.servers[serverId];
-- remove virtual hashRing from the server
-- now for each key value pairs call add key value
+* Extracts all key-value pairs
+* Removes the corresponding virtual nodes
+* Re-adds the keys so they redistribute across the ring
 
 addKeyValue(key, value)
-- get the hashed value
-- binarySearch the hash ring for insertion
-- insert the key value pair to the server
+* hash the key
+* locate the next clockwise server via binary search
+* insert into that server's store
 
 
 ### Helper function
-addVirtualNode()
-binarySearch()
-Hash function()
-
-Please see the code below
+* addVirtualNode()
+* binarySearch()
+* Hash function()
+* hash()
 
 ```
 class ConsistentHasRing {
@@ -184,7 +189,7 @@ class ConsistentHasRing {
       const mid = (left + right) >> 1;
       const midVal = this.hashRing[mid].pos;
 
-      if (midVal < val) {
+      if (midVal < key) {
         left = mid + 1;
       } else {
         right = mid - 1;
