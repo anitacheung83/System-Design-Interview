@@ -97,71 +97,68 @@ Hash Algorithm:
 * What if a server is removed shilw holding data?
   * Rehash each key and reinsert based on the ring. 
 
-### Functions
-contructor()
-- Parameter: numServers, vnodeCount
-- Data Structure:
-  - this.hashRing = []
-  - this.servers = {}
-  - this.numberOfServer = numServers;
-  - this.vnodeCount = vnodeCount
-- Calls `addServers()` for each server count.
-
-addServers()
-* Adds the server to this.servers
-* Adds its virtual nodes to the ring
-* Sorts the ring for binary search
-
-removeServer()
-* Extracts all key-value pairs
-* Removes the corresponding virtual nodes
-* Re-adds the keys so they redistribute across the ring
-
-addKeyValue(key, value)
-* hash the key
-* locate the next clockwise server via binary search
-* insert into that server's store
-
-
-### Helper function
-* addVirtualNode()
-* binarySearch()
-* Hash function()
-* hash()
-
 ```
 class ConsistentHasRing {
   constructor(numServers, vnodeCount = 4){
+    /**
+     * Initialize a server.
+     *
+     * @param {number} numServers - number of servers.
+     * @param {number} vnodeCount - number of virtual node for each server.
+     * @returns {None} .
+     */
     this.hashRing = [];
     this.servers = {};
     this.numberOfServer = numServers;
     this.vnodeCount = vnodeCount;
 
+    // Calls `addServers()` for each server count.
     for (let s = 0; s < numServers; s ++) {
       this.addServers(s)
     }
   }
 
   addServers() {
+    /**
+     * Initialize a server.
+     *
+     * @param {number} num1 - The first number.
+     * @param {number} num2 - The second number.
+     * @returns {number} The sum of num1 and num2.
+     */
+
+    // Add server to this.servers
     this.servers[serverId] = {};
+    // Add virtual nodes to this.hashRing.
     this.addVirtualNodes(serverId);
-    this.hashRing.sort((a, b) => a.pos - b.pos)
+    // Sort this.hashRing for binary search.
+    this.hashRing.sort((a, b) => a.pos - b.pos) 
   }
 
-  removeServer() {
+  removeServer(serverId) {
+    // Extract all the key-value pairs belong to serverId, need to make a copy because the address is going to be deleted.
     const key_to_value = this.hashRing[serverId].copy()
-    delete this.hashRing[serverId];
+    // Removes the corresponding server node, Should remove the virtual node aswell
+    delete this.servers[serverId];
+
+    // Remove corresponding virtual nodes
     this.hashRing = this.hashRing.filter( n => n.serverId !== serverId);
+
+    // Re-adds the keys so they redistribute across the ring
     for (key, value) in key_to_value {
       this.addKeyValue(key, value)
     }
   }
 
   addKeyValue(key, value) {
+    //hash the key
     const pos = key % 1024
+
+    // Get the index for insertion
     const idx = this.binarySearch(pos)
     const serverId = this.hashRing[idx].serverId;
 
+    // insert the key value to the server
     this.servers[serverId][key] = value;
   }
 
