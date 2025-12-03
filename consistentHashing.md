@@ -97,7 +97,7 @@ Hash Algorithm:
 * What if a server is removed shilw holding data?
   * Rehash each key and reinsert based on the ring. 
 
-```
+```js
 class ConsistentHasRing {
   constructor(numServers, vnodeCount = 4){
     /**
