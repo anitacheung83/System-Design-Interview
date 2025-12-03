@@ -9,7 +9,7 @@ However, reading alone is never enough. Once you actually start implement these 
 
 # Consistent Hashing
 As data grows, a single server is never enough. To handle scale, we often need dozens or even hundreds of servers to store key-value pairs.
-That means we need away to distribute data across multiple servers efficiently.
+That means we need a way to distribute data across multiple servers efficiently.
 
 So how do we do that? 
 
@@ -33,24 +33,24 @@ To reduce unneccessary reallocation, we need a better approach.
 
 Enter **Consistent Hashing**!
 
-However, adding a servers to increase capacity and removing a server due to system failure is unavoidable in the real world.
+In real world scenarios, adding servers to increase capacity and removing servers due to failures happens all the time. Traditional hashing causes a high amount of movement when this happens.
 
-With Traditional hashing, a lot of data will ended up in a different server eventhough there is no need for them to move.
+**Consistent Hashing** resolves this by using a **hash ring**:
 
-Here comes the hashRing.
-1. A Ring
-2. Go clockwise to find the next avaliable servers.
-3. 
-Explain why use a hash Ring, because of consistency and adding a server and removing a server does not need to reorganize the key value store.
+1. Imagine all hash valus arranged in a circle.
+2. Each server is placed somewhere on that circle.
+3. To find where a key belongs, you go clockwise until you reach the next server.
 
-Now what happend with all the servers if the servers is crowded together, then the problem where most of the key value store happened in a server might
-Virtual Ring, why is it needed?
+This design brings **stability**: adding or removing a server only affects a small portion of the keys, instead of all of them.
 
-A virtual ring is putting servers into different parts of the ring, which will ended up in the same server.
+But there's another issue: What if servers cluster in the same part of the ring?
+That can create hotspots where one server holds too many keys.
 
-There is only so much I can explain in a few sentences, therefore for further please return to System Design Interview: Chapter 5: Consistent Hashing.
+Thats why we introduce **Virtual Nodes**,
 
-Which hash Algorithm to use?
+Each physical server is mapped to multiple points on the ring. This spreads load more evely and avoids hotspots.
+
+There's much more depth behind these concepts, so if you're interested, please check out _System Design Interview: Consistent Hashing_.
 
 
 ## Description
@@ -144,8 +144,12 @@ class ConsistentHasRing {
   }
 
   removeServer() {
+    const key_to_value = this.hashRing[serverId].copy()
     delete this.hashRing[serverId];
     this.hashRing = this.hashRing.filter( n => n.serverId !== serverId);
+    for (key, value) in key_to_value {
+      this.addKeyValue(key, value)
+    }
   }
 
   addKeyValue(key, value) {
@@ -174,7 +178,7 @@ class ConsistentHasRing {
 
   binarySearch(key){
     let left = 0;
-    let right = this.hashRing.length
+    let right = this.hashRing.length -1;
 
     while (left <= right) {
       const mid = (left + right) >> 1;
@@ -186,6 +190,7 @@ class ConsistentHasRing {
         right = mid - 1;
       }
     }
+    return left === this.hashRing.length ? 0 : left;
   }
 
   hash(str) {
