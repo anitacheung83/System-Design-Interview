@@ -2,12 +2,12 @@ Lets start with the classic.
 
 Here is what I learned about **System Design Interview: Consistent Hashing**.
 
-Working in a start up community: One Eleven has allowed me to talk to startup founders. Spending time with startup founders has shown me how critical scalability really is.
+Working in a start up community: One Eleven has allowed me to talk to startup founders, where I realized how critical scalability really is.
 That push me to pick up the _System Design Interview_ book.
 
 However, reading alone is never enough. Once you actually start implement these concepts, you start to see the gaps between yourself and the distributed system. Such as which algorithms to choose and why.
 
-# Consistent Hashing
+## What is Consistent Hashing?
 As data grows, a single server is never enough. To handle scale, we often need dozens or even hundreds of servers to store key-value pairs.
 That means we need a way to distribute data across multiple servers efficiently.
 
@@ -18,9 +18,9 @@ The answer is **Hashing**!
 Assuming you have 4 servers, traditional hashing (what we learned in school) looks like this:
 You compute `key % numberOfServers` to decide which server stores the data.
 
-But what happens when a server gose down?
+But what happens when a server goes down?
 
-| With 4 Servers | With 3 Servers |
+| With 4 Servers | With 3 Servers (1 server went down) |
 | :-------: | :------: |
 |  16 % 4 = 0  | 14 % 3 = 1 | 
 |  19 % 4 = 3 | 19 % 3 = 1  | 
@@ -48,12 +48,12 @@ That can create hotspots where one server holds too many keys.
 
 Thats why we introduce **Virtual Nodes**,
 
-Each physical server is mapped to multiple points on the ring. This spreads load more evely and avoids hotspots.
+Each physical server is mapped to multiple points on the ring. This spreads load more evenly and avoids hotspots.
 
 There's much more depth behind these concepts, so if you're interested, please check out _System Design Interview: Consistent Hashing_.
 
 
-## Description
+## Design Consistent Hashing with JavaScript
 ### Initialization/Core Setup
 * number of servers: The number of server in the system.
 * number of virtual node: The number of virtual node for each server
