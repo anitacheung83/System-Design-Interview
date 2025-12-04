@@ -3,14 +3,14 @@ Lets start with the classic.
 Here is what I learned about **System Design Interview: Consistent Hashing**.
 
 Working in a startup community: One Eleven has allowed me to talk to startup founders, where I learned how critical scalability really is.
-That experience motivated me to pick up the _System Design Interview_ book.
+That experience motivated me to pick up the [_System Design Interview_](https://bytes.usc.edu/~saty/courses/docs/data/SystemDesignInterview.pdf) book.
 
 I soon realized that reading alone wasn't enough. Implementing these concepts revealed the real gaps—like understanding which algorithms to choose and the reasoning behind those choices.
 
 ## What is Consistent Hashing?
 As data grows, one server can’t keep up. Scaling often requires dozens or even hundreds of servers to store key–value pairs, which means we need an efficient way to distribute data across them.
 
-_So how do we do that? _
+**_So how do we do that?_**
 
 The answer is **Hashing**!
 
@@ -18,7 +18,7 @@ Assume you have 4 servers,
 
 you can determine where each key–value pair should go by computing `key % numberOfServers`.
 
-_But what happens when a server goes down?_
+**_But what happens when a server goes down?_**
 
 | With 4 Servers | With 3 Servers (1 server went down) |
 | :-------: | :------: |
@@ -68,7 +68,7 @@ Features to support:
 ### Data Structure
 
 ### Hash Ring structure:
-At first, I thought about creating an array of size 1024(`hashRing` size) and storing servers directly at each index.
+At first, I thought about creating an array of size 1024 (`hashRing` size) and storing servers directly at each index.
 But most positions on the ring would be empty, which makes it **inefficient**.
 
 Instead, I store the `hashRing` as an array of `{pos: number, serverId: number}`. 
@@ -86,129 +86,153 @@ Thus, the algorithm I ended up choosing is **Binary Search**.
 * It can maintain the `hashRing` sorted.
 
 Hash Algorithm:
-* Name an algorithm that does not work and explain why
-* name an algorithm that works and explain why
+* Polynomial rolling hash
 
 ### Edge Cases to Consider
 * What happens when the hash of a key is larger than every virtual node's position?
-  * Wrap around to the first node in the ring. Update Binary Search.
-* What if all virtual nodes cluster together?
-  * Virtaul nodes help distribute them evenly.
-* What if a server is removed shilw holding data?
-  * Rehash each key and reinsert based on the ring. 
+  * Wrap around to the first node.
+  * The binary search handles this by returning an index equal to hashRing.length, in which case we map the key to index 0.
 
 ```js
-class ConsistentHasRing {
-  constructor(numServers, vnodeCount = 4){
-    /**
-     * Initialize a server.
-     *
-     * @param {number} numServers - number of servers.
-     * @param {number} vnodeCount - number of virtual node for each server.
-     * @returns {None} .
-     */
-    this.hashRing = [];
-    this.servers = {};
-    this.numberOfServer = numServers;
-    this.vnodeCount = vnodeCount;
-
-    // Calls `addServers()` for each server count.
-    for (let s = 0; s < numServers; s ++) {
-      this.addServers(s)
-    }
-  }
-
-  addServers() {
-    /**
-     * Initialize a server.
-     *
-     * @param {number} num1 - The first number.
-     * @param {number} num2 - The second number.
-     * @returns {number} The sum of num1 and num2.
-     */
-
-    // Add server to this.servers
-    this.servers[serverId] = {};
-    // Add virtual nodes to this.hashRing.
-    this.addVirtualNodes(serverId);
-    // Sort this.hashRing for binary search.
-    this.hashRing.sort((a, b) => a.pos - b.pos) 
-  }
-
-  removeServer(serverId) {
-    // Extract all the key-value pairs belong to serverId, need to make a copy because the address is going to be deleted.
-    const key_to_value = this.hashRing[serverId].copy()
-    // Removes the corresponding server node, Should remove the virtual node aswell
-    delete this.servers[serverId];
-
-    // Remove corresponding virtual nodes
-    this.hashRing = this.hashRing.filter( n => n.serverId !== serverId);
-
-    // Re-adds the keys so they redistribute across the ring
-    for (key, value) in key_to_value {
-      this.addKeyValue(key, value)
-    }
-  }
-
-  addKeyValue(key, value) {
-    //hash the key
-    const pos = key % 1024
-
-    // Get the index for insertion
-    const idx = this.binarySearch(pos)
-    const serverId = this.hashRing[idx].serverId;
-
-    // insert the key value to the server
-    this.servers[serverId][key] = value;
-  }
-
-  // ------------------------
-  // Helper Functions
-  // ------------------------
+class ConsistentHashRing {
+    constructor(numServers, vnodeCount = 4){
+      /**
+       * Initialize Consistent Hash Ring.
+       * Initializes `hashRing` and `servers`, and calls `addServers()` 
+       * for each server to populate the hash ring with virtual nodes.
+       *
+       * @param {number} numServers - number of servers.
+       * @param {number} vnodeCount - number of virtual node for each server.
+       * @returns {None} .
+       */
+      this.hashRing = [];
+      this.servers = {};
+      this.numberOfServer = numServers;
+      this.vnodeCount = vnodeCount;
   
-  addVirtualNodes(serverId){
-    for (i = 0; i < this.vnodeCount ; i ++){
-      const pos = this.hash(`server-${serverId}-vnode-${i}`) % 1024;
-      this.insertIntoRing(pos, serverId);
-    }
-  }
-
-  insertIntoRing(pos, serverId){
-    const idx = this.binarySearch(pos)
-    this.hashRing.splice(idx, 0, {pos, serverId})
-  }
-
-  binarySearch(key){
-    let left = 0;
-    let right = this.hashRing.length -1;
-
-    while (left <= right) {
-      const mid = (left + right) >> 1;
-      const midVal = this.hashRing[mid].pos;
-
-      if (midVal < key) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
+      // Calls `addServers()` for each server count.
+      for (let s = 0; s < numServers; s ++) {
+        this.addServers(s)
       }
     }
-    return left === this.hashRing.length ? 0 : left;
-  }
-
-  hash(str) {
-    let h = 0;
-    for (let c of str) h = (h * 31 + c.charCodeAt(0)) % 1024;
-    return h
-  }
+  
+    addServers(serverId) {
+      /**
+       * Add a new physical server and its virtual nodes to the consistent hash ring.
+       *
+       * @param {number} serverId - The unique identifier for the server.
+       *
+       * @throws Will throw an error if the server already exists.
+       *
+       * Adds the server to `this.servers`, creates its virtual nodes in `this.hashRing`,
+       * and sorts the hash ring to enable efficient binary search.
+       */
+      
+      if (this.servers[serverId]) {
+        throw "Server already exists";
+      }
+      
+      // Add server to servers map
+      this.servers[serverId] = {};
+      
+      // Add virtual nodes for the server to the hash ring
+      this.addVirtualNodes(serverId);
+      
+      // Sort hash ring positions for binary search
+      this.hashRing.sort((a, b) => a.pos - b.pos);
+    }
+  
+    removeServer(serverId) {
+      /**
+       * Remove a server and its virtual nodes from the consistent hash ring.
+       *
+       * @param {number} serverId - The unique identifier of the server to remove.
+       *
+       * @throws Will throw an error if the server does not exist.
+       *
+       */
+    
+      if (!this.servers[serverId]) {
+        throw "Server does not exist";
+      }
+    
+      // Extract key-value pairs for this server (make a copy)
+      const key_to_value = { ...this.servers[serverId] };
+    
+      // Remove the server
+      delete this.servers[serverId];
+    
+      // Remove corresponding virtual nodes from the hash ring
+      this.hashRing = this.hashRing.filter(node => node.serverId !== serverId);
+    
+      // Redistribute keys across remaining servers
+      for (const [key, value] of Object.entries(key_to_value)) {
+        this.addKeyValue(key, value);
+      }
+    }
+  
+  
+    addKeyValue(key, value) {
+      /**
+       * Add a key-value pair to the appropriate server in the consistent hash ring.
+       *
+       * @param {number} key - The key to store.
+       * @param {*} value - The value associated with the key.
+       */
+    
+      // Hash the key to a position in the ring
+      const pos = key % 1024; // You could replace 1024 with the actual ring size or a hash function
+    
+      // Find the server index in the hash ring
+      const idx = this.binarySearch(pos);
+      const serverId = this.hashRing[idx].serverId;
+    
+      // Insert the key-value pair into the selected server
+      this.servers[serverId][key] = value;
+    }
+  
+  
+    // ------------------------
+    // Helper Functions
+    // ------------------------
+    
+    addVirtualNodes(serverId){
+      for (i = 0; i < this.vnodeCount ; i ++){
+        const pos = this.hash(`server-${serverId}-vnode-${i}`) % 1024;
+        this.insertIntoRing(pos, serverId);
+      }
+    }
+  
+    insertIntoRing(pos, serverId){
+      const idx = this.binarySearch(pos)
+      this.hashRing.splice(idx, 0, {pos, serverId})
+    }
+  
+    binarySearch(key){
+      let left = 0;
+      let right = this.hashRing.length -1;
+  
+      while (left <= right) {
+        const mid = (left + right) >> 1;
+        const midVal = this.hashRing[mid].pos;
+  
+        if (midVal < key) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
+      }
+      return left === this.hashRing.length ? 0 : left;
+    }
+  
+    hash(str) {
+      let h = 0;
+      for (let c of str) h = (h * 31 + c.charCodeAt(0)) % 1024;
+      return h
+    }
 }
 ```
 
 So what does Consistent hashing taught me about life? Being **consistent** is a **key** **value** in life.
 
-PS. there is a lot of missing part at this chapter, it is not intended to be a perfectly working Consistent Hash. Feel free to make it a fuller working things.
-
-
-
-
-
-
+PS. there is a lot of missing part, it is not intended to be a perfectly working Consistent Hash.
