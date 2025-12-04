@@ -2,23 +2,23 @@ Lets start with the classic.
 
 Here is what I learned about **System Design Interview: Consistent Hashing**.
 
-Working in a start up community: One Eleven has allowed me to talk to startup founders, where I realized how critical scalability really is.
-That push me to pick up the _System Design Interview_ book.
+Working in a startup community: One Eleven has allowed me to talk to startup founders, where I learned how critical scalability really is.
+That experience motivated me to pick up the _System Design Interview_ book.
 
-However, reading alone is never enough. Once you actually start implement these concepts, you start to see the gaps between yourself and the distributed system. Such as which algorithms to choose and why.
+I soon realized that reading alone wasn't enough. Implementing these concepts revealed the real gaps—like understanding which algorithms to choose and the reasoning behind those choices.
 
 ## What is Consistent Hashing?
-As data grows, a single server is never enough. To handle scale, we often need dozens or even hundreds of servers to store key-value pairs.
-That means we need a way to distribute data across multiple servers efficiently.
+As data grows, one server can’t keep up. Scaling often requires dozens or even hundreds of servers to store key–value pairs, which means we need an efficient way to distribute data across them.
 
-So how do we do that? 
+_So how do we do that? _
 
 The answer is **Hashing**!
 
-Assuming you have 4 servers, traditional hashing (what we learned in school) looks like this:
-You compute `key % numberOfServers` to decide which server stores the data.
+Assume you have 4 servers,
 
-But what happens when a server goes down?
+you can determine where each key–value pair should go by computing `key % numberOfServers`.
+
+_But what happens when a server goes down?_
 
 | With 4 Servers | With 3 Servers (1 server went down) |
 | :-------: | :------: |
@@ -27,30 +27,30 @@ But what happens when a server goes down?
 |  91 % 4 = 3  | 91 % 3 = 1 |
 
 Notice how many keys now map to different servers when just one server is removed.
-This means massive data reallocation, which is expensive and slow.
+This leads to massive data reallocation, which is both expensive and slow.
+
+In real world scenarios, servers are frequently added or removed, and traditional hashing leads to excessive data movement whenever this happens.
 
 To reduce unneccessary reallocation, we need a better approach.
 
 Enter **Consistent Hashing**!
 
-In real world scenarios, adding servers to increase capacity and removing servers due to failures happens all the time. Traditional hashing causes a high amount of movement when this happens.
-
 **Consistent Hashing** resolves this by using a **hash ring**:
 
-1. Imagine all hash valus arranged in a circle.
+1. Imagine all hash values arranged in a circle.
 2. Each server is placed somewhere on that circle.
 3. To find where a key belongs, you go clockwise until you reach the next server.
 
-This design brings **stability**: adding or removing a server only affects a small portion of the keys, instead of all of them.
+This design brings **stability**: adding or removing a server only affects a small portion of the keys, instead of most of them.
 
-But there's another issue: What if servers cluster in the same part of the ring?
+But there's another issue: _What if servers cluster in the same part of the ring?_
 That can create hotspots where one server holds too many keys.
 
 Thats why we introduce **Virtual Nodes**,
 
 Each physical server is mapped to multiple points on the ring. This spreads load more evenly and avoids hotspots.
 
-There's much more depth behind these concepts, so if you're interested, please check out _System Design Interview: Consistent Hashing_.
+There's much more depth behind these concepts, so if you're interested, please check out _System Design Interview: Chapter 5: Consistent Hashing_.
 
 
 ## Design Consistent Hashing with JavaScript
@@ -68,22 +68,22 @@ Features to support:
 ### Data Structure
 
 ### Hash Ring structure:
-At first, I thought about creating an array of size 1024(hashRing size) and storing servers directly at each index.
-But most positions on the ring would be empty, which makes it inefficient.
+At first, I thought about creating an array of size 1024(`hashRing` size) and storing servers directly at each index.
+But most positions on the ring would be empty, which makes it **inefficient**.
 
-Instead, I store the hashRing as an array of `{pos: number, serverId: number}`. 
+Instead, I store the `hashRing` as an array of `{pos: number, serverId: number}`. 
 Each entry represents a virtual node placed on the ring.
 
 Seperately, I maintain a server map that stores all key-value pairs: `{serverId: {key: value}}`.
 
 ### Algorithm:
 We need an efficient algorithm for inserting and locating nodes on the ring.
-I initially considered using a heap to maintain a sorted arr of the hashRing.
+Initially, I considered using a heap to maintain a sorted `arr` of the hashRing.
 Note that heaps are optimized for retreiving min/max, but **not** inserting elements at sorted positions.
 
-Thus, the algorithm I ended up choosing is: Binary Search
-* It provides `O(log n)` loockup/insert time.
-* Thus, it is important to maintain the hashRing sorted.
+Thus, the algorithm I ended up choosing is **Binary Search**.
+* It provides `O(log n)` lookup/insert time.
+* It can maintain the `hashRing` sorted.
 
 Hash Algorithm:
 * Name an algorithm that does not work and explain why
@@ -205,8 +205,7 @@ class ConsistentHasRing {
 
 So what does Consistent hashing taught me about life? Being **consistent** is a **key** **value** in life.
 
-BUG: what happened when the last server has hash 1023 and the key value is 1024, did we take care about the edge case?
-PS. there is a lot of missing part at this chapter, it is not intended to be a perfectly working Router. Feel free to make it a fuller working things.
+PS. there is a lot of missing part at this chapter, it is not intended to be a perfectly working Consistent Hash. Feel free to make it a fuller working things.
 
 
 
