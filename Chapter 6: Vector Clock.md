@@ -67,10 +67,12 @@ class VectorClock(){
   }
 }
 
+```
+
+```js
 function compare(vc1, vc2){
   
 }
-
 ```
 
 ```js
@@ -86,8 +88,13 @@ Sx.write("D", "D2", ctx);
 ctx = Sx.read("D")[0].clock.copy();
 Sy.write("D", "D3", ctx);
 
+// Concurrent
 ctx= SX.read("D")[0].clock.copy();
+Sz.write("D", "D4", ctx); 
 
+const merged = new VectorClock();
+merged.merge(Sy.read("D")[0].clock);
+merged.merge(Sz.read("D")[0].clock);
 
-
+Sx.write("D", "D5", merged)
 ```
