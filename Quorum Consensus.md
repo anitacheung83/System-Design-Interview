@@ -1,1 +1,1 @@
-# Quorom Consensus
+# Chapter 6: Quorom Consensus
