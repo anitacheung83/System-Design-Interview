@@ -113,3 +113,8 @@ merged.merge(Sz.read("D")[0].clock);
 
 Sx.write("D", "D5", merged)
 ```
+For more conflict detection: there are two types
+* on each write go through all the server to ensure match: High Consistency
+* Check periodically, which is more common.
+
+Garbage collections of the old version, is also something to considered.
