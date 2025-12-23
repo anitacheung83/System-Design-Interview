@@ -71,7 +71,22 @@ class VectorClock(){
 
 ```js
 function compare(vc1, vc2){
-  
+  let vc1Before = false;
+  let vc2Before = false;
+
+  const servers = new Set([...Object.keys(vc1.clock), ...Object.keys(vc2.clock)])
+
+  for (const s of servers) {
+    const v1 = vc1.clock[s] || 0;
+    const v2 = vc2.clock[s] || 0;
+
+    if (v1 < v2) vc1Before = true;
+    if (v1 > v2) vc2Before = true;
+  }
+
+  if (vc1Before && !vc2Before) return "ANCESTOR";
+  if (vc2Before && !vc1Before) return "DESCENDANT";
+  return "CONFLICT";
 }
 ```
 
