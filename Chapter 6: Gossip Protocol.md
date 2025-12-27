@@ -9,7 +9,9 @@ Why send all members info instead of itself?
 - If I send everything I know, information spreads exponentially.
 
 How does node discover new member?
+
 A) Create a function add server
+
 B) When receive and if the member does not exists, I add the new member.
 
 ```js
