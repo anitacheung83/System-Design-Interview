@@ -14,6 +14,12 @@ A) Create a function add server
 
 B) When receive and if the member does not exists, I add the new member.
 
+You need both. In a real world system, you need seed server
+
+Member vs Peers
+
+When are peers added?
+
 ```js
 
 class Member() {
@@ -31,6 +37,10 @@ class Server() {
     this.member = {
       [id]: new Member(id)
     }
+  }
+
+  addServer(id){
+    this.member[id] = new Member(id)
   }
 
   start(){
