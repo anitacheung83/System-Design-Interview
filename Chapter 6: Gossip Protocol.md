@@ -65,13 +65,14 @@ for (int i = 0; i < 6; i ++){
 
 members = {}
 
-for (server of servers){
+for (const server of servers){
   let member = new Member(server.id, server.heartbeat, server.time)
   members[server.id] = members
 }
 
 for (server of servers){
   server.members = members
+  server.peers = members
 }
 
 ```
