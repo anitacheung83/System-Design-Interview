@@ -1,8 +1,12 @@
-
 # Goosip Protocol
 
 It is important to notice the difference between Goosip and Broadcast. Gossip send the notification to k random peers and not everyone.
 Membership list should not be shared to everyone, it should be a deep copy.
+
+Why send all members info instead of itself?
+- Because Goosip spreads information transitively.
+- If I only send my own heartbeat, information spreads slowly.
+- If I send everything I know, information spreads exponentially.
 
 ```js
 
@@ -35,7 +39,18 @@ class Server() {
     const peers = pickRandom(peers, 2)
 
     for (const peer of peers){
-      
+      peer.receive(this.members)
+    }
+  }
+
+  receive(remoteMembers){
+    for (const member of remoteMembers){
+      const remote = remoteMembers[member]
+      const local = this.members[member]
+
+      if (!local || remote.heartbeat > local.heartbeat){
+        this.members[id] = {...remote}
+      }
     }
   }
 }
